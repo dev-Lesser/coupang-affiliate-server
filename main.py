@@ -12,7 +12,8 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 import json
-
+import pandas as pd
+import seaborn as sns
 app = FastAPI()
 
 origins = ["*"]
@@ -53,6 +54,76 @@ class BlackList(BaseModel):
 class StopWords(BaseModel):
     stop: str
 
+cmap = list(sns.color_palette("hls", 5))
+cmap = [(int(i[0]*255), int(i[1]*255), int(i[2]*255)) for i in cmap]
+cmap=['rgb'+str(i) for i in cmap]
+def make_network_chart(df):
+    global cmap
+    node_id = {}
+    idx=1
+    for i in df['bigram'].dropna():
+        nodes = i.split('|')
+        for node in nodes:
+            if node not in node_id.keys() and len(df[df['keyword']==node])!=0:
+                node_id[node] = idx
+                idx+=1
+    for i in df['trigram']:
+        nodes = i.split('|')
+        for node in nodes:
+            if node not in node_id.keys() and len(df[df['keyword']==node])!=0:
+                node_id[node] = idx
+                idx+=1
+    data = {'nodes':[],'links':[]}
+    tmp_ids = []
+    for i in df['bigram']:
+        nodes = i.split('|')
+        for inode in nodes:
+            try:
+                node = {'id':node_id[inode],'name':inode, '_color':cmap[int(node_id[inode]/20)]}
+                
+                if node not in data['nodes']:
+                    data['nodes'].append(node)
+                tmp_ids.append(node_id[inode])
+            except Exception:
+                continue
+        try:
+            data['links'].append({'sid': tmp_ids[0], 
+                                'tid': tmp_ids[1],
+                                '_color': 'black',
+                                    '_svgAttrs': {
+                                        'stroke-width': 2,
+                                        'opacity': 1
+                                    }}
+            )
+        except Exception:
+            pass
+        tmp_ids = []
+    tmp_ids = []
+    for i in df['trigram']:
+        nodes = i.split('|')
+        for inode in nodes:
+            try:
+                node = {'id':node_id[inode],'name':inode, '_color':cmap[int(node_id[inode]/20)]}
+                
+                if node not in data['nodes']:
+                    data['nodes'].append(node)
+                tmp_ids.append(node_id[inode])
+            except Exception:
+                continue
+        try:
+            data['links'].append({'sid': tmp_ids[0], 
+                                'tid': tmp_ids[1],
+                                '_color': 'black',
+                                    '_svgAttrs': {
+                                        'stroke-width': 2,
+                                        'opacity': 1
+                                    }
+                                }
+            )
+        except Exception:
+            pass
+        tmp_ids = []
+    return data
 ## login API endpoint
 @app.post('/api/v1.0/login')
 async def login(user: User, Authorize: AuthJWT = Depends()):
@@ -74,28 +145,38 @@ async def get_theme():
     )
 
 # mongodb 에서 분석된 결과 가져오기
-@app.get("/api/v1.0/data")
-def get_analysis_data():
-    collection = db[env.COLLECTION_ANALYSIS]
-    result = []
-    data = list(collection.find({},{'_id':0}).sort([("analysis_date", -1)]))
-    for i in data:
-        convert_date = i['analysis_date'].strftime('%Y-%m-%d %H:%M:%S')
-        result.append({
-            'theme': i['theme'],
-            'data': i['data'],
-            'date': convert_date
-        })
+# @app.get("/api/v1.0/data")
+# def get_analysis_data(theme:str):
+#     collection = db[env.COLLECTION_ANALYSIS]
+#     result = []
 
-    return JSONResponse(
-        status_code=200,
-        content= result
-    )
+#     data = list(collection.find({},{'_id':0}).sort([("analysis_date", -1)]))
+#     for i in data:
+#         convert_date = i['analysis_date'].strftime('%Y-%m-%d %H:%M:%S')
+#         result.append({
+#             'theme': i['theme'],
+#             'data': i['data'],
+#             'date': convert_date
+#         })
+
+#     return JSONResponse(
+#         status_code=200,
+#         content= result
+#     )
 
 @app.get("/api/v1.0/data")
-def get_anaylsis_theme_data(theme:str):
+async def get_anaylsis_theme_data(theme:str):
     collection = db[env.COLLECTION_ANALYSIS]
-    result = collection.find_one({'theme':theme},{'_id':0}).sort([("analysis_date", -1)])
+    result = collection.find_one({'theme':theme},{'_id':0})
+    keyword, bigram, trigram = result['data']['keyword'], result['data']['bigram'], result['data']['trigram']
+
+    if result:
+        result['analysis_date'] = result['analysis_date'].strftime('%Y-%m-%d %H:%M:%S')
+
+    df = pd.concat([pd.DataFrame(keyword),pd.DataFrame(bigram),pd.DataFrame(trigram)],axis=1)
+    df.columns = ['keyword','keyword_num','bigram','bigram_num','trigram','trigram_num']
+    data = make_network_chart(df)
+    result['network'] =data
     return JSONResponse(
         status_code=200,
         content= result
