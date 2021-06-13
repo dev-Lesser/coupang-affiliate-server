@@ -64,7 +64,8 @@ def make_network_chart(df):
             if node not in node_id.keys() and len(df[df['keyword']==node])!=0:
                 node_id[node] = idx
                 idx+=1
-    for i in df['trigram']:
+    for i in df['trigram'].dropna():
+
         nodes = i.split('|')
         for node in nodes:
             if node not in node_id.keys() and len(df[df['keyword']==node])!=0:
@@ -72,7 +73,7 @@ def make_network_chart(df):
                 idx+=1
     data = {'nodes':[],'links':[]}
     tmp_ids = []
-    for i in df['bigram']:
+    for i in df['bigram'].dropna():
         nodes = i.split('|')
         for inode in nodes:
             try:
@@ -96,7 +97,7 @@ def make_network_chart(df):
             pass
         tmp_ids = []
     tmp_ids = []
-    for i in df['trigram']:
+    for i in df['trigram'].dropna():
         nodes = i.split('|')
         for inode in nodes:
             try:
@@ -288,4 +289,4 @@ async def delete_stopwords(stopwords: StopWords,  Authorize: AuthJWT = Depends()
 
 
 if __name__ == '__main__':
-    uvicorn.run("main:app", reload= True)
+    uvicorn.run("main:app", host="0.0.0.0",reload= True)
