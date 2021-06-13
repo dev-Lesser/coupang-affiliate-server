@@ -13,7 +13,6 @@ from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import pandas as pd
-import seaborn as sns
 app = FastAPI()
 
 origins = ["*"]
@@ -54,9 +53,7 @@ class BlackList(BaseModel):
 class StopWords(BaseModel):
     stop: str
 
-cmap = list(sns.color_palette("hls", 5))
-cmap = [(int(i[0]*255), int(i[1]*255), int(i[2]*255)) for i in cmap]
-cmap=['rgb'+str(i) for i in cmap]
+cmap = ['rgb(219, 94, 86)', 'rgb(184, 219, 86)', 'rgb(86, 219, 147)', 'rgb(86, 131, 219)', 'rgb(200, 86, 219)']
 def make_network_chart(df):
     global cmap
     node_id = {}
