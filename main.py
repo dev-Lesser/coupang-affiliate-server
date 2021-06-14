@@ -1,5 +1,5 @@
 from typing import Optional
-
+import os
 from fastapi import FastAPI
 import uvicorn
 import pymongo
@@ -23,12 +23,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-mongodb_url = MONGODB_URL
+mongodb_url = os.environ['MONGODB_URL']
 client = pymongo.MongoClient(mongodb_url)
-db=client[DBNAME]
+db=client[os.environ['DBNAME']]
 
 class Settings(BaseModel):
-    authjwt_secret_key: str = SECRET_KEY
+    authjwt_secret_key: str = os.environ['SECRET_KEY']
 
 @AuthJWT.load_config
 def get_config():
@@ -124,7 +124,7 @@ def make_network_chart(df):
 ## login API endpoint
 @app.post('/api/v1.0/login')
 async def login(user: User, Authorize: AuthJWT = Depends()):
-    if user.username != ADMIN_USER or user.password != ADMIN_PASSWORD:
+    if user.username != os.environ['ADMIN_USER'] or user.password != os.environ['ADMIN_PASSWORD']:
         raise HTTPException(status_code=401, detail="아이디와 비밀번호를 확인해주세요.")
 
     expires = timedelta(days=1)
@@ -133,7 +133,7 @@ async def login(user: User, Authorize: AuthJWT = Depends()):
 
 @app.get("/api/v1.0/theme")
 async def get_theme(): 
-    collection = db[COLLECTION_THEME]
+    collection = db[os.environ['COLLECTION_THEME']]
     data = list(collection.find({},{'_id':0}).sort([("theme", 1)]))
 
     return JSONResponse(
@@ -163,7 +163,7 @@ async def get_theme():
 
 @app.get("/api/v1.0/data")
 async def get_anaylsis_theme_data(theme:str, date:str):
-    collection = db[COLLECTION_ANALYSIS]
+    collection = db[os.environ['COLLECTION_ANALYSIS']]
     year,month,day = date.split('-')
     convert_date = datetime(int(year),int(month),int(day),23,59)
     result = collection.find_one({'theme':theme, 'start_date':{'$lte':convert_date}},{'_id':0}, sort=[('start_date', -1)])
