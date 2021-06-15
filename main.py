@@ -16,6 +16,8 @@ app = FastAPI()
 
 origins = ["*"]
 
+cmap = ['rgb(219, 94, 86)', 'rgb(184, 219, 86)', 'rgb(86, 219, 147)', 'rgb(86, 131, 219)', 'rgb(200, 86, 219)']
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -52,7 +54,6 @@ class BlackList(BaseModel):
 class StopWords(BaseModel):
     stop: str
 
-cmap = ['rgb(219, 94, 86)', 'rgb(184, 219, 86)', 'rgb(86, 219, 147)', 'rgb(86, 131, 219)', 'rgb(200, 86, 219)']
 def make_network_chart(df):
     global cmap
     node_id = {}
@@ -192,11 +193,14 @@ async def get_best_data( date:str):
     year,month,day = date.split('-')
     convert_date = datetime(int(year),int(month),int(day),23,59)
     # year,month,day = date.split('-')
-    result = collection.find({'proposal':True,'start_date':{'$gte': datetime(int(year),int(month),int(day),0,0),'$lte':convert_date}},
+    result = list(collection.find({'proposal':True,
+                                'start_date':{
+                                    '$gte': datetime(int(year),int(month),int(day),0,0),
+                                    '$lte':convert_date
+                                }},
                             {'_id':0,'data':0,'proposal':0, 'start_date':0, 'end_date':0}, 
-                            sort=[('start_date', -1)])
+                            sort=[('start_date', -1)]))
 
-    print(result)
     if result:
         # result['start_date'] = result['start_date'].strftime('%Y-%m-%d')
         # result['end_date'] = result['end_date'].strftime('%Y-%m-%d')
