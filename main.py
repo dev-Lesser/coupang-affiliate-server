@@ -193,12 +193,17 @@ async def get_best_data( date:str):
     convert_date = datetime(int(year),int(month),int(day),23,59)
     # year,month,day = date.split('-')
     result = collection.find({'proposal':True,'start_date':{'$gte': datetime(int(year),int(month),int(day),0,0),'$lte':convert_date}},
-                            {'_id':0,'data':0,'proposal':0}, 
+                            {'_id':0,'data':0,'proposal':0, 'start_date':0, 'end_date':0}, 
                             sort=[('start_date', -1)])
 
+
     if result:
-        result['start_date'] = result['start_date'].strftime('%Y-%m-%d')
-        result['end_date'] = result['end_date'].strftime('%Y-%m-%d')
+        # result['start_date'] = result['start_date'].strftime('%Y-%m-%d')
+        # result['end_date'] = result['end_date'].strftime('%Y-%m-%d')
+        return JSONResponse(
+            status_code=200,
+            content= result
+        )
     else:
         return JSONResponse(
         status_code=401,
@@ -206,10 +211,7 @@ async def get_best_data( date:str):
     )
 
 
-    return JSONResponse(
-        status_code=200,
-        content= result
-    )
+    
 
 
 if __name__ == '__main__':
