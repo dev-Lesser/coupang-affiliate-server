@@ -196,7 +196,7 @@ async def get_best_data( date:str):
                             {'_id':0,'data':0,'proposal':0, 'start_date':0, 'end_date':0}, 
                             sort=[('start_date', -1)])
 
-
+    print(result)
     if result:
         # result['start_date'] = result['start_date'].strftime('%Y-%m-%d')
         # result['end_date'] = result['end_date'].strftime('%Y-%m-%d')
