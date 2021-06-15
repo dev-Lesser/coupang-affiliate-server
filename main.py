@@ -166,7 +166,7 @@ async def get_anaylsis_theme_data(theme:str, date:str):
     collection = db[os.environ['COLLECTION_ANALYSIS']]
     year,month,day = date.split('-')
     convert_date = datetime(int(year),int(month),int(day),23,59)
-    result = collection.find_one({'theme':theme, 'start_date':{'$lte':convert_date}},{'_id':0}, sort=[('start_date', -1)])
+    result = collection.find_one({'theme':theme, 'start_date':{'$gte': datetime(int(year),int(month),int(day),0,0),'$lte':convert_date}},{'_id':0}, sort=[('start_date', -1)])
     keyword, bigram, trigram = result['data']['keyword'], result['data']['bigram'], result['data']['trigram']
 
     if result:
@@ -186,7 +186,30 @@ async def get_anaylsis_theme_data(theme:str, date:str):
         status_code=200,
         content= result
     )
+@app.get("/api/v1.0/best")
+async def get_best_data( date:str):
+    collection = db[os.environ['COLLECTION_ANALYSIS']]
+    year,month,day = date.split('-')
+    convert_date = datetime(int(year),int(month),int(day),23,59)
+    # year,month,day = date.split('-')
+    result = collection.find({'proposal':True,'start_date':{'$gte': datetime(int(year),int(month),int(day),0,0),'$lte':convert_date}},
+                            {'_id':0,'data':0,'proposal':0}, 
+                            sort=[('start_date', -1)])
 
+    if result:
+        result['start_date'] = result['start_date'].strftime('%Y-%m-%d')
+        result['end_date'] = result['end_date'].strftime('%Y-%m-%d')
+    else:
+        return JSONResponse(
+        status_code=401,
+        content= None
+    )
+
+
+    return JSONResponse(
+        status_code=200,
+        content= result
+    )
 
 
 if __name__ == '__main__':
